@@ -1,10 +1,11 @@
 
 import sys
-import datetime
+from datetime import datetime
 import time
 import urllib
 import urllib2
 
+from dateutil import tz
 from scapy.all import *
 
 
@@ -13,6 +14,13 @@ MAGIC_FORM_URL = 'http://api.cloudstitch.com/braedenyoung/magic-form/datasources
 
 currently_practicing = False
 previous_time = None;
+
+
+def main_loop():
+
+    while 1:
+        print sniff(prn=arp_display, filter="arp", store=0, count=0)
+        time.sleep(0.1)
 
 
 def arp_display(pkt):
@@ -27,18 +35,12 @@ def arp_display(pkt):
                 print "ARP Probe from unknown device: " + pkt[ARP].hwsrc
 
 
-def main_loop():
-
-    while 1:
-        print sniff(prn=arp_display, filter="arp", store=0, count=0)
-        time.sleep(0.1)
-
 def record_event():
     print 'Recording event'
 
     global currently_practicing, previous_time
 
-    current_time = datetime.datetime.utcnow()
+    current_time = datetime.utcnow()
 
     time_difference = ''
 
@@ -50,7 +52,7 @@ def record_event():
         previous_time = current_time
 
     data = {
-        "Date": format_time(current_time),
+        "Date": format_and_localize_time(current_time),
         "Event": 'Started Practicing' if not currently_practicing else 'Finished Practing',
         "Amount of Practice": time_difference,
     }
@@ -60,11 +62,16 @@ def record_event():
 
 def get_time_delta(current, previous):
     return strfdelta((current - previous),
-    '{hours}:{minutes}:{seconds}') if previous else ''
+    '{minutes}') if previous else ''
 
 
-def format_time(time_value):
-        return time_value.strftime("%Y-%m-%d %H:%M:%S")
+def format_and_localize_time(time_value):
+
+        time_value = time_value.replace(tzinfo=tz.tzutc())
+        localized_time = time_value.astimezone(tz.tzlocal())
+
+        return localized_time.strftime("%Y-%m-%d %H:%M:%S")
+
 
 def strfdelta(tdelta, fmt):
     d = {"days": tdelta.days}
