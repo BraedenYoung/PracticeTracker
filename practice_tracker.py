@@ -42,6 +42,7 @@ def record_event():
 
     current_time = datetime.utcnow()
     time_difference = ''
+    run_again = False
 
     if currently_practicing:
         try:
