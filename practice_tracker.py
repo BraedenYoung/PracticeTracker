@@ -18,7 +18,6 @@ previous_time = None;
 
 
 def main_loop():
-
     while 1:
         print sniff(prn=arp_display, filter="arp", store=0, count=0)
         time.sleep(0.1)
@@ -48,9 +47,10 @@ def record_event():
         try:
             time_difference = get_time_delta(current_time, previous_time)
         except MissedPressError:
-            print colored('ERROR!', 'red', attrs=['bold', 'blink'])
-            print colored('Button not pressed on previous day, default average used.', 'red')
+            missed_press_error_message()
             time_difference = 20
+            run_again = True
+
         print 'Practice Time : ', colored(time_difference, 'magenta')
         previous_time = None
     else:
@@ -63,6 +63,10 @@ def record_event():
     }
     currently_practicing = False if currently_practicing else True
     response = urllib2.urlopen(MAGIC_FORM_URL, data=urllib.urlencode(data))
+
+    if run_again:
+        # In the event a press is missed we would still want to log the new start time
+        record_event()
 
 
 def get_time_delta(current, previous):
@@ -96,6 +100,11 @@ def strfdelta(tdelta, fmt):
 
 class MissedPressError(Exception):
      pass
+
+
+def missed_press_error_message():
+    print colored('ERROR!', 'red', attrs=['bold', 'blink'])
+    print colored('Button not pressed on previous day, default average used.', 'red')
 
 
 if __name__ == '__main__':
